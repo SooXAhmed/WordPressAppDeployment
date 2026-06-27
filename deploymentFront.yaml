@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+  labels:
+   app: word-press-app
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: word-press-app-frontend
+
+  template:
+    metadata:
+      labels:
+        app: word-press-app-frontend
+
+    spec:
+      containers:
+      - name: word-press
+        image: wordpress:latest
+
+        ports:
+        - containerPort: 80
+
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: database-service:3306
+
+        - name: WORDPRESS_DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_DATABASE
+
+        - name: WORDPRESS_DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_USER
+
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_PASSWORD
+
+        volumeMounts:
+        - name: wordpress-storage
+          mountPath: /var/www/html/wp-content
+
+      volumes:
+      - name: wordpress-storage
+        persistentVolumeClaim:
+          claimName: wordpress-pvc
